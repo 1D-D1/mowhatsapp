@@ -32,4 +32,4 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate resolve --applied 0_init 2>/dev/null; node node_modules/prisma/build/index.js migrate deploy || echo 'Migration warning'; node server.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate resolve --rolled-back 0_init 2>/dev/null; node node_modules/prisma/build/index.js migrate deploy || echo 'Migration warning'; node server.js"]
