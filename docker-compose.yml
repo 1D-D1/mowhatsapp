@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    container_name: mowhatsapp
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: "postgres://mowhatsapp:${DB_PASSWORD}@mowhatsapp-db:5432/mowhatsapp"
+      WAHA_API_URL: "${WAHA_API_URL}"
+      WAHA_API_KEY: "${WAHA_API_KEY}"
+      API_IPROYAL: "${API_IPROYAL}"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
+      NEXTAUTH_URL: "https://mowhatsapp.aseta.fr"
+      CRON_SECRET: "${CRON_SECRET}"
+    volumes:
+      - uploads:/app/public/uploads
+    depends_on:
+      mowhatsapp-db:
+        condition: service_healthy
+
+  mowhatsapp-db:
+    image: postgres:16-alpine
+    container_name: mowhatsapp-db
+    restart: always
+    environment:
+      POSTGRES_USER: mowhatsapp
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: mowhatsapp
+    volumes:
+      - mowhatsapp_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mowhatsapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  uploads:
+    driver: local
+  mowhatsapp_pgdata:
+    driver: local
