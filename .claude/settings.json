@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "curl",
+      "wget",
+      "npx",
+      "npm",
+      "node",
+      "prisma"
+    ],
+    "deny": []
+  }
+}

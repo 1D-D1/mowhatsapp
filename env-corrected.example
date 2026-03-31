@@ -1,0 +1,27 @@
+# ============================================================
+# Mo'WhatsApp — .env (variables APP uniquement)
+# ============================================================
+#
+# ⚠️  LES CLÉS API NE SONT PAS ICI
+# Les variables suivantes sont déjà dans les variables
+# d'environnement système et sont lues automatiquement
+# via process.env — NE PAS LES DUPLIQUER ICI :
+#
+#   WAHA_API_URL        → URL de l'instance WAHA
+#   WAHA_API_KEY        → Clé API WAHA
+#   WAHA_DASHBOARD_USER → Login dashboard WAHA
+#   WAHA_DASHBOARD_PASS → Password dashboard WAHA
+#   API_IPROYAL         → Token API IPRoyal
+#
+# ============================================================
+
+# === DATABASE (interne au docker-compose) ===
+DATABASE_URL=postgres://mowhatsapp:${DB_PASSWORD}@mowhatsapp-db:5432/mowhatsapp
+DB_PASSWORD=a_generer_au_deploy
+
+# === AUTH APP (à générer) ===
+NEXTAUTH_SECRET=a_generer_openssl_rand_hex_32
+NEXTAUTH_URL=https://mowhatsapp.aseta.fr
+
+# === SCHEDULER ===
+CRON_SECRET=a_generer_openssl_rand_hex_16
