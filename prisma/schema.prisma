@@ -70,6 +70,7 @@ model SessionBrand {
   sessionId  String
   session    WahaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   brandId    String
+  promoCode  String?
   brand      Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade)
   assignedAt DateTime    @default(now())
 

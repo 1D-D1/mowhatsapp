@@ -16,14 +16,21 @@ import { ArrowLeft } from "lucide-react";
 import { ContentManager } from "@/components/ContentManager";
 
 async function getCampaign(id: string) {
-  return prisma.campaign.findUnique({
-    where: { id },
-    include: {
-      brand: true,
-      contents: { orderBy: { position: "asc" } },
-      _count: { select: { publishLogs: true } },
-    },
-  });
+  const [campaign, sessions] = await Promise.all([
+    prisma.campaign.findUnique({
+      where: { id },
+      include: {
+        brand: true,
+        contents: { orderBy: { position: "asc" } },
+        _count: { select: { publishLogs: true } },
+      },
+    }),
+    prisma.wahaSession.findMany({
+      select: { id: true, sessionName: true, status: true },
+      orderBy: { sessionName: "asc" },
+    }),
+  ]);
+  return { campaign, sessions };
 }
 
 const statusColors = {
@@ -37,7 +44,7 @@ export default async function CampaignDetailPage({
 }: {
   params: { id: string };
 }) {
-  const campaign = await getCampaign(params.id);
+  const { campaign, sessions } = await getCampaign(params.id);
   if (!campaign) notFound();
 
   return (
@@ -79,6 +86,7 @@ export default async function CampaignDetailPage({
           <ContentManager
             campaignId={campaign.id}
             initialContents={campaign.contents}
+            sessions={sessions}
           />
         </CardContent>
       </Card>

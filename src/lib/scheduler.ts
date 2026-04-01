@@ -4,6 +4,7 @@ import {
   publishStatusImage,
   publishStatusVideo,
 } from "@/lib/waha";
+import { resolveVariables } from "@/lib/promo-code";
 import { differenceInDays } from "date-fns";
 
 export interface SchedulerResult {
@@ -54,11 +55,16 @@ export async function runScheduler(): Promise<SchedulerResult> {
     const content = campaign.contents[contentIndex];
     if (!content) continue;
 
-    // 3. Find all WORKING sessions tagged for this brand
+    // 3. Find all WORKING sessions tagged for this brand (with promo codes)
     const sessions = await prisma.wahaSession.findMany({
       where: {
         status: "WORKING",
         brands: { some: { brandId: campaign.brandId } },
+      },
+      include: {
+        brands: {
+          where: { brandId: campaign.brandId },
+        },
       },
     });
 
@@ -75,10 +81,16 @@ export async function runScheduler(): Promise<SchedulerResult> {
       failed: 0,
     };
 
-    // 4. Publish to each session
+    // 4. Publish to each session with resolved variables
     for (const session of sessions) {
       try {
-        await publishStatus(session.sessionName, content, campaign);
+        const sessionBrand = session.brands[0];
+        const variables = {
+          promoCode: sessionBrand?.promoCode || "",
+          displayName: session.displayName || "",
+          brandName: campaign.brand.name,
+        };
+        await publishStatus(session.sessionName, content, campaign, variables);
 
         await prisma.publishLog.create({
           data: {
@@ -133,11 +145,15 @@ async function publishStatus(
     caption: string | null;
   },
   campaign: {
-    brand: { ctaUrl: string | null; ctaPhone: string | null; ctaType: string };
-  }
+    brand: { ctaUrl: string | null; ctaPhone: string | null; ctaType: string; name: string };
+  },
+  variables?: { promoCode?: string; displayName?: string; brandName?: string }
 ) {
-  // Build caption with CTA
-  const caption = buildCaption(content.caption, campaign.brand);
+  // Build caption with CTA, then resolve variables
+  let caption = buildCaption(content.caption, campaign.brand);
+  if (caption && variables) {
+    caption = resolveVariables(caption, variables);
+  }
 
   // Build full URL for the content file
   const baseUrl =
@@ -163,9 +179,12 @@ async function publishStatus(
       );
       break;
 
-    case "TEXT":
-      await publishStatusText(sessionName, caption || "");
+    case "TEXT": {
+      let text = content.caption || content.fileUrl || "";
+      if (variables) text = resolveVariables(text, variables);
+      await publishStatusText(sessionName, text);
       break;
+    }
 
     default:
       throw new Error(`Unknown content type: ${content.type}`);

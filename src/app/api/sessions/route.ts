@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { generatePromoCode } from "@/lib/promo-code";
 import {
   createSession as wahaCreateSession,
   deleteSession as wahaDeleteSession,
@@ -95,7 +96,16 @@ export async function POST(request: NextRequest) {
         status: "SCAN_QR",
         proxyId: null,
         brands: {
-          create: brandIds.map((brandId) => ({ brandId })),
+          create: brandIds.map((brandId) => {
+            const brand = brands.find((b) => b.id === brandId);
+            return {
+              brandId,
+              promoCode: generatePromoCode(
+                displayName || phoneNumber.slice(-4),
+                brand?.slug || "xx"
+              ),
+            };
+          }),
         },
       },
       include: {
