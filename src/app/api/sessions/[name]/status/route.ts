@@ -23,6 +23,7 @@ export async function GET(
     });
 
     // Sync WAHA status to DB if needed
+    let currentDbStatus = dbSession?.status ?? null;
     if (wahaStatus && dbSession) {
       const mappedStatus = mapWahaStatus(wahaStatus);
       if (mappedStatus !== dbSession.status) {
@@ -33,13 +34,14 @@ export async function GET(
             ...(mappedStatus === "WORKING" ? { lastSeenAt: new Date() } : {}),
           },
         });
+        currentDbStatus = mappedStatus;
       }
     }
 
     return NextResponse.json({
       sessionName: params.name,
       wahaStatus,
-      dbStatus: dbSession?.status ?? null,
+      dbStatus: currentDbStatus,
     });
   } catch (error) {
     console.error(`GET /api/sessions/${params.name}/status error:`, error);

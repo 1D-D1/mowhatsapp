@@ -75,10 +75,10 @@ export function QRDisplay({ sessionName, onConnected, onFailed }: QRDisplayProps
       if (!res.ok) return;
       const data = await res.json();
 
-      if (data.wahaStatus === "WORKING" || data.dbStatus === "WORKING") {
+      if (data.dbStatus === "WORKING") {
         clearIntervals();
         onConnected?.();
-      } else if (data.wahaStatus === "FAILED") {
+      } else if (data.wahaStatus === "FAILED" || data.dbStatus === "FAILED") {
         setStatus("failed");
         setErrorMsg("La session a échoué. Vérifiez le proxy ou réessayez.");
         setQrValue(null);

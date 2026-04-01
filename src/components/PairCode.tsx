@@ -57,7 +57,7 @@ export function PairCode({ sessionName, phoneNumber, onConnected }: PairCodeProp
         const res = await fetch(`/api/sessions/${sessionName}/status`);
         if (!res.ok) return;
         const data = await res.json();
-        if (data.wahaStatus === "WORKING" || data.dbStatus === "WORKING") {
+        if (data.dbStatus === "WORKING") {
           if (intervalRef.current) clearInterval(intervalRef.current);
           onConnected?.();
         }
