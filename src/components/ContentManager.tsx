@@ -402,16 +402,14 @@ export function ContentManager({
               </div>
 
               {/* Test send */}
-              {workingSessions.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openTestDialog(content.id)}
-                  title="Tester l'envoi"
-                >
-                  <Send className="h-3 w-3" />
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openTestDialog(content.id)}
+                title="Tester l'envoi"
+              >
+                <Send className="h-3 w-3" />
+              </Button>
 
               {/* Delete */}
               <AlertDialog>
@@ -451,31 +449,44 @@ export function ContentManager({
               Envoyer ce contenu comme Story sur un compte WhatsApp
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Session WhatsApp</Label>
-              <Select value={testSessionId} onValueChange={setTestSessionId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un compte" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workingSessions.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.sessionName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {workingSessions.length === 0 ? (
+            <div className="py-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Aucune session WhatsApp connectée.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Connectez un compte via /join d&apos;abord.
+              </p>
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={handleTestSend}
-              disabled={testSending || !testSessionId}
-            >
-              {testSending ? "Envoi..." : "Envoyer la Story"}
-            </Button>
-          </DialogFooter>
+          ) : (
+            <>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Session WhatsApp</Label>
+                  <Select value={testSessionId} onValueChange={setTestSessionId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un compte" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workingSessions.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.sessionName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={handleTestSend}
+                  disabled={testSending || !testSessionId}
+                >
+                  {testSending ? "Envoi..." : "Envoyer la Story"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

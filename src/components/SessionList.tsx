@@ -41,7 +41,7 @@ interface SessionItem {
   displayName: string | null;
   status: "PENDING" | "SCAN_QR" | "WORKING" | "FAILED" | "STOPPED";
   proxy: { server: string } | null;
-  brands: Array<{ brand: { id: string; name: string; slug: string } }>;
+  brands: Array<{ promoCode: string | null; brand: { id: string; name: string; slug: string } }>;
   _count: { publishLogs: number };
   lastSeenAt: string | Date | null;
 }
@@ -152,13 +152,18 @@ export function SessionList({
                 {session.brands.map((b) => (
                   <Badge key={b.brand.id} variant="outline" className="text-xs">
                     {b.brand.name}
+                    {b.promoCode && (
+                      <span className="ml-1 font-mono font-bold text-primary">
+                        {b.promoCode}
+                      </span>
+                    )}
                   </Badge>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
                 {session.phoneNumber || "—"} |{" "}
-                Proxy: {session.proxy?.server || "aucun"} |{" "}
                 {session._count.publishLogs} pub(s)
+                {session.proxy && ` | Proxy: ${session.proxy.server}`}
               </p>
             </div>
 

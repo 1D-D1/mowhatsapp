@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assignProxyToSession } from "@/lib/proxy-manager";
-import { updateSession } from "@/lib/waha";
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,32 +57,8 @@ export async function POST(request: NextRequest) {
           `Session ${sessionName} status updated: ${dbSession.status} -> ${newStatus}`
         );
 
-        // AUTO-ASSIGN PROXY when session becomes WORKING (connected)
-        if (newStatus === "WORKING" && !dbSession.proxyId) {
-          try {
-            const { proxy, wahaProxy } = await assignProxyToSession(sessionName);
-
-            // Update WAHA session with proxy config
-            await updateSession(sessionName, {
-              proxy: wahaProxy,
-            });
-
-            // Update DB
-            await prisma.wahaSession.update({
-              where: { id: dbSession.id },
-              data: { proxyId: proxy.id },
-            });
-
-            console.log(
-              `Proxy ${proxy.server} assigned to session ${sessionName} after connection`
-            );
-          } catch (error) {
-            console.error(
-              `Failed to assign proxy to ${sessionName} (session still works without proxy):`,
-              error
-            );
-          }
-        }
+        // NOTE: Proxy assignment is manual from admin UI.
+        // Auto-assigning proxy after connection caused disconnections.
       }
     }
 
