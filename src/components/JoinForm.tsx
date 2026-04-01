@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Smartphone, QrCode, CheckCircle, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Smartphone, QrCode, CheckCircle, Loader2, Hash } from "lucide-react";
 import { QRDisplay } from "@/components/QRDisplay";
+import { PairCode } from "@/components/PairCode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,9 +22,21 @@ interface BrandOption {
   logoUrl: string | null;
 }
 
-type Step = "form" | "qr" | "done";
+type Step = "form" | "connect" | "done";
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
+      navigator.userAgent
+    );
+    setIsMobile(check);
+  }, []);
+  return isMobile;
+}
 
 export function JoinForm({ brands }: { brands: BrandOption[] }) {
+  const isMobile = useIsMobile();
   const [step, setStep] = useState<Step>("form");
   const [phone, setPhone] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -31,6 +44,11 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sessionName, setSessionName] = useState("");
+  const [connectMode, setConnectMode] = useState<"qr" | "code">("qr");
+
+  useEffect(() => {
+    if (isMobile) setConnectMode("code");
+  }, [isMobile]);
 
   function toggleBrand(id: string) {
     setSelectedBrands((prev) =>
@@ -67,7 +85,7 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
 
       const session = await res.json();
       setSessionName(session.sessionName);
-      setStep("qr");
+      setStep("connect");
     } catch {
       setError("Erreur de connexion au serveur");
     } finally {
@@ -90,21 +108,63 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
     );
   }
 
-  if (step === "qr") {
+  if (step === "connect") {
     return (
       <Card>
         <CardHeader className="text-center">
-          <QrCode className="mx-auto h-8 w-8" />
-          <CardTitle>Scannez le QR Code</CardTitle>
+          {connectMode === "qr" ? (
+            <QrCode className="mx-auto h-8 w-8" />
+          ) : (
+            <Hash className="mx-auto h-8 w-8" />
+          )}
+          <CardTitle>
+            {connectMode === "qr"
+              ? "Scannez le QR Code"
+              : "Code de liaison"}
+          </CardTitle>
           <CardDescription>
-            Ouvrez WhatsApp &gt; Appareils connectés &gt; Connecter un appareil
+            {connectMode === "qr"
+              ? "Ouvrez WhatsApp > Appareils connectés > Connecter un appareil"
+              : "Entrez ce code dans WhatsApp > Appareils connectés > Lier avec numéro de téléphone"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <QRDisplay
-            sessionName={sessionName}
-            onConnected={() => setStep("done")}
-          />
+        <CardContent className="space-y-4">
+          {connectMode === "qr" ? (
+            <QRDisplay
+              sessionName={sessionName}
+              onConnected={() => setStep("done")}
+            />
+          ) : (
+            <PairCode
+              sessionName={sessionName}
+              phoneNumber={phone}
+              onConnected={() => setStep("done")}
+            />
+          )}
+
+          {/* Toggle between QR and Code */}
+          <div className="flex justify-center pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setConnectMode((m) => (m === "qr" ? "code" : "qr"))
+              }
+              className="text-xs text-muted-foreground"
+            >
+              {connectMode === "qr" ? (
+                <>
+                  <Hash className="mr-1 h-3 w-3" />
+                  Utiliser un code à la place
+                </>
+              ) : (
+                <>
+                  <QrCode className="mr-1 h-3 w-3" />
+                  Utiliser un QR code à la place
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -170,9 +230,7 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
             </div>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button
             type="submit"

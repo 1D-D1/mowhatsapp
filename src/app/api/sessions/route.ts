@@ -6,7 +6,6 @@ import {
   stopSession as wahaStopSession,
   startSession as wahaStartSession,
 } from "@/lib/waha";
-import { assignProxyToSession } from "@/lib/proxy-manager";
 
 export async function GET() {
   try {
@@ -59,16 +58,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Assign proxy (optional — session can work without proxy)
-    let proxyId: string | null = null;
-    let wahaProxy: { server: string; username: string; password: string } | undefined;
-    try {
-      const result = await assignProxyToSession(sessionName);
-      proxyId = result.proxy.id;
-      wahaProxy = result.wahaProxy;
-    } catch (error) {
-      console.error("Proxy assignment failed (continuing without proxy):", error);
-    }
+    // NOTE: Proxy is assigned AFTER connection (via webhook), not during creation
+    // This avoids proxy interference with the QR scan/pairing process
 
     // Get brand slugs for metadata
     const brands = await prisma.brand.findMany({
@@ -76,7 +67,7 @@ export async function POST(request: NextRequest) {
     });
     const brandSlugs = brands.map((b) => b.slug);
 
-    // Create WAHA session
+    // Create WAHA session WITHOUT proxy
     const webhookUrl = `${process.env.NEXTAUTH_URL || "https://mowhatsapp.aseta.fr"}/api/webhooks/waha`;
 
     try {
@@ -84,7 +75,6 @@ export async function POST(request: NextRequest) {
         name: sessionName,
         brands: brandSlugs,
         phone: phoneNumber,
-        proxy: wahaProxy,
         webhookUrl,
       });
     } catch (error) {
@@ -103,7 +93,7 @@ export async function POST(request: NextRequest) {
         phoneNumber,
         displayName: displayName || null,
         status: "SCAN_QR",
-        proxyId,
+        proxyId: null,
         brands: {
           create: brandIds.map((brandId) => ({ brandId })),
         },
