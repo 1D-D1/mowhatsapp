@@ -59,8 +59,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Assign proxy
-    const { proxy, wahaProxy } = await assignProxyToSession(sessionName);
+    // Assign proxy (optional — session can work without proxy)
+    let proxyId: string | null = null;
+    let wahaProxy: { server: string; username: string; password: string } | undefined;
+    try {
+      const result = await assignProxyToSession(sessionName);
+      proxyId = result.proxy.id;
+      wahaProxy = result.wahaProxy;
+    } catch (error) {
+      console.error("Proxy assignment failed (continuing without proxy):", error);
+    }
 
     // Get brand slugs for metadata
     const brands = await prisma.brand.findMany({
@@ -80,9 +88,10 @@ export async function POST(request: NextRequest) {
         webhookUrl,
       });
     } catch (error) {
-      console.error("WAHA createSession error:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("WAHA createSession error:", msg);
       return NextResponse.json(
-        { error: "Failed to create WAHA session" },
+        { error: `Failed to create WAHA session: ${msg}` },
         { status: 502 }
       );
     }
@@ -94,7 +103,7 @@ export async function POST(request: NextRequest) {
         phoneNumber,
         displayName: displayName || null,
         status: "SCAN_QR",
-        proxyId: proxy.id,
+        proxyId,
         brands: {
           create: brandIds.map((brandId) => ({ brandId })),
         },
@@ -107,9 +116,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(session, { status: 201 });
   } catch (error) {
-    console.error("POST /api/sessions error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("POST /api/sessions error:", msg);
     return NextResponse.json(
-      { error: "Failed to create session" },
+      { error: `Failed to create session: ${msg}` },
       { status: 500 }
     );
   }

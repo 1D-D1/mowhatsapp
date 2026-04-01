@@ -26,9 +26,10 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("POST /api/proxies error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("POST /api/proxies error:", msg);
     return NextResponse.json(
-      { error: "Failed to generate proxies" },
+      { error: `Failed to generate proxies: ${msg}` },
       { status: 500 }
     );
   }
