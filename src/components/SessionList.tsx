@@ -11,6 +11,7 @@ import {
   Tag,
 } from "lucide-react";
 import { toast } from "sonner";
+import { QRDisplay } from "@/components/QRDisplay";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -69,7 +70,6 @@ export function SessionList({
   const router = useRouter();
   const [sessions, setSessions] = useState(initialSessions);
   const [qrSession, setQrSession] = useState<string | null>(null);
-  const [qrKey, setQrKey] = useState(0);
   const [brandsDialogSession, setBrandsDialogSession] = useState<string | null>(null);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
 
@@ -167,10 +167,7 @@ export function SessionList({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setQrSession(session.sessionName);
-                    setQrKey((k) => k + 1);
-                  }}
+                  onClick={() => setQrSession(session.sessionName)}
                 >
                   <QrCode className="mr-1 h-3 w-3" />
                   QR
@@ -253,25 +250,15 @@ export function SessionList({
             </DialogDescription>
           </DialogHeader>
           {qrSession && (
-            <div className="flex justify-center py-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                key={qrKey}
-                src={`/api/sessions/${qrSession}/qr`}
-                alt="QR Code"
-                className="h-64 w-64"
-              />
-            </div>
+            <QRDisplay
+              sessionName={qrSession}
+              onConnected={() => {
+                setQrSession(null);
+                refreshSessions();
+                toast.success("Session connectée !");
+              }}
+            />
           )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setQrKey((k) => k + 1)}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Rafraîchir
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

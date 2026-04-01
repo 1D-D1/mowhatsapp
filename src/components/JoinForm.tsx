@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Smartphone, QrCode, CheckCircle, RefreshCw, Loader2 } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Loader2 } from "lucide-react";
+import { QRDisplay } from "@/components/QRDisplay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +31,6 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sessionName, setSessionName] = useState("");
-  const [qrKey, setQrKey] = useState(0);
 
   function toggleBrand(id: string) {
     setSelectedBrands((prev) =>
@@ -68,32 +68,11 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
       const session = await res.json();
       setSessionName(session.sessionName);
       setStep("qr");
-      startStatusPolling(session.sessionName);
     } catch {
       setError("Erreur de connexion au serveur");
     } finally {
       setLoading(false);
     }
-  }
-
-  function startStatusPolling(name: string) {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/sessions/${name}/status`);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        if (data.wahaStatus === "WORKING" || data.dbStatus === "WORKING") {
-          clearInterval(interval);
-          setStep("done");
-        }
-      } catch {
-        // Ignore polling errors
-      }
-    }, 3000);
-
-    // Stop polling after 5 minutes
-    setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
   }
 
   if (step === "done") {
@@ -121,29 +100,11 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
             Ouvrez WhatsApp &gt; Appareils connectés &gt; Connecter un appareil
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              key={qrKey}
-              src={`/api/sessions/${sessionName}/qr`}
-              alt="QR Code WhatsApp"
-              className="h-64 w-64 rounded-lg border"
-            />
-          </div>
-          <div className="flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setQrKey((k) => k + 1)}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Rafraîchir le QR code
-            </Button>
-          </div>
-          <p className="text-center text-xs text-muted-foreground">
-            En attente de la connexion... Le scan sera détecté automatiquement.
-          </p>
+        <CardContent>
+          <QRDisplay
+            sessionName={sessionName}
+            onConnected={() => setStep("done")}
+          />
         </CardContent>
       </Card>
     );
