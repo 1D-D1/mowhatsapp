@@ -112,7 +112,7 @@ export async function POST(
         } else {
           throw new Error(`URL not accessible: ${urlCheck.status}`);
         }
-      } catch (urlError) {
+      } catch {
         // Fallback: Read file from disk and send as base64
         console.log(`URL ${publicUrl} not accessible, trying file read...`);
         const filePath = path.join(process.cwd(), "public", content.fileUrl);
