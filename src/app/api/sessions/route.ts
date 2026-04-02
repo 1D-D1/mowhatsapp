@@ -6,6 +6,7 @@ import {
   deleteSession as wahaDeleteSession,
   stopSession as wahaStopSession,
   startSession as wahaStartSession,
+  updateSession as wahaUpdateSession,
 } from "@/lib/waha";
 
 export async function GET() {
@@ -80,11 +81,24 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error("WAHA createSession error:", msg);
-      return NextResponse.json(
-        { error: `Failed to create WAHA session: ${msg}` },
-        { status: 502 }
-      );
+      // If session already exists in WAHA, continue (we'll update it)
+      if (!msg.includes("already exists")) {
+        console.error("WAHA createSession error:", msg);
+        return NextResponse.json(
+          { error: `Failed to create WAHA session: ${msg}` },
+          { status: 502 }
+        );
+      }
+      console.log(`WAHA session ${sessionName} already exists, continuing...`);
+    }
+
+    // Force-set webhook (GOWS doesn't always apply it during creation)
+    try {
+      await wahaUpdateSession(sessionName, {
+        webhooks: [{ url: webhookUrl, events: ["session.status"] }],
+      });
+    } catch {
+      console.error(`Failed to set webhook on ${sessionName} (non-blocking)`);
     }
 
     // Save to DB
