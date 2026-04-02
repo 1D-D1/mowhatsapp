@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
             return {
               brandId,
               promoCode: generatePromoCode(
-                displayName || phoneNumber.slice(-4),
+                phoneNumber,
                 brand?.slug || "xx"
               ),
             };

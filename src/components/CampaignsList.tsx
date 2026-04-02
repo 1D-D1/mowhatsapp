@@ -45,6 +45,7 @@ interface Campaign {
   publishTime: string;
   status: "ACTIVE" | "PAUSED" | "COMPLETED";
   startDate: string | Date;
+  discountPercent: number | null;
   _count: { contents: number; publishLogs: number };
 }
 
@@ -52,12 +53,14 @@ interface CampaignFormData {
   name: string;
   loopDays: number;
   publishTime: string;
+  discountPercent: string;
 }
 
 const emptyForm: CampaignFormData = {
   name: "",
   loopDays: 1,
   publishTime: "09:00",
+  discountPercent: "",
 };
 
 const statusColors = {
@@ -93,6 +96,7 @@ export function CampaignsList({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          discountPercent: form.discountPercent ? parseInt(form.discountPercent) : null,
           brandId,
         }),
       });
@@ -122,6 +126,7 @@ export function CampaignsList({
       name: campaign.name,
       loopDays: campaign.loopDays,
       publishTime: campaign.publishTime,
+      discountPercent: campaign.discountPercent ? String(campaign.discountPercent) : "",
     });
     setEditingId(campaign.id);
     setDialogOpen(true);
@@ -222,6 +227,20 @@ export function CampaignsList({
                   }
                 />
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="discountPercent">Réduction % (optionnel)</Label>
+                <Input
+                  id="discountPercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.discountPercent}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, discountPercent: e.target.value }))
+                  }
+                  placeholder="ex: 10, 15, 20"
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button onClick={handleSubmit} disabled={loading || !form.name}>
@@ -253,6 +272,11 @@ export function CampaignsList({
                   <Badge variant={statusColors[campaign.status]}>
                     {campaign.status}
                   </Badge>
+                  {campaign.discountPercent && (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
+                      -{campaign.discountPercent}%
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Boucle: {campaign.loopDays}j | Heure: {campaign.publishTime} |{" "}

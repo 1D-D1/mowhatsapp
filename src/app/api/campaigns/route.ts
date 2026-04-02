@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { brandId, name, loopDays, publishTime, startDate } = body;
+    const { brandId, name, loopDays, publishTime, startDate, discountPercent } = body;
 
     if (!brandId || !name || !loopDays) {
       return NextResponse.json(
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         loopDays,
         publishTime: publishTime || "09:00",
         startDate: startDate ? new Date(startDate) : new Date(),
+        discountPercent: discountPercent || null,
       },
       include: { brand: true },
     });

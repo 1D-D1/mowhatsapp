@@ -1,17 +1,12 @@
 /**
- * Generate a promo code from a WhatsAppeur name + brand slug.
- * Format: 3 first letters of name (uppercase) + 2-letter brand initials (uppercase)
- * Example: "Jacques" + "jungletech" → "JACJT"
+ * Generate a promo code from a phone number + brand slug.
+ * Format: last 4 digits of phone + 2-letter brand initials (uppercase)
+ * Example: "0694888777" + "jungle-tech" → "8777JU"
  */
-export function generatePromoCode(displayName: string, brandSlug: string): string {
-  // First 3 letters of name, uppercase
-  const namePart = (displayName || "USR")
-    .replace(/[^a-zA-Z]/g, "")
-    .substring(0, 3)
-    .toUpperCase()
-    .padEnd(3, "X");
+export function generatePromoCode(phoneNumber: string, brandSlug: string): string {
+  const cleanPhone = phoneNumber.replace(/\D/g, "");
+  const phonePart = cleanPhone.slice(-4).padStart(4, "0");
 
-  // Brand initials: first letter of each word, max 2
   const brandParts = brandSlug.replace(/-/g, " ").split(/\s+/);
   let brandPart: string;
   if (brandParts.length >= 2) {
@@ -20,7 +15,7 @@ export function generatePromoCode(displayName: string, brandSlug: string): strin
     brandPart = brandSlug.substring(0, 2).toUpperCase();
   }
 
-  return `${namePart}${brandPart}`;
+  return `${phonePart}${brandPart}`;
 }
 
 /**
@@ -29,6 +24,7 @@ export function generatePromoCode(displayName: string, brandSlug: string): strin
  *   {{CODE_PROMO}} → the session's promo code for the brand
  *   {{PRENOM}}     → the WhatsAppeur's display name
  *   {{MARQUE}}     → the brand name
+ *   {{REDUCTION}}  → the campaign discount percentage (e.g., "10%")
  */
 export function resolveVariables(
   text: string,
@@ -36,6 +32,7 @@ export function resolveVariables(
     promoCode?: string;
     displayName?: string;
     brandName?: string;
+    discountPercent?: number | null;
   }
 ): string {
   let result = text;
@@ -47,6 +44,9 @@ export function resolveVariables(
   }
   if (variables.brandName) {
     result = result.replace(/\{\{MARQUE\}\}/g, variables.brandName);
+  }
+  if (variables.discountPercent) {
+    result = result.replace(/\{\{REDUCTION\}\}/g, `${variables.discountPercent}%`);
   }
   return result;
 }

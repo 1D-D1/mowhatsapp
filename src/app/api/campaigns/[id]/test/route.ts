@@ -88,6 +88,7 @@ export async function POST(
       promoCode: sessionBrand?.promoCode || "",
       displayName: session.displayName || "",
       brandName: campaign.brand.name,
+      discountPercent: campaign.discountPercent,
     };
 
     if (content.type === "TEXT") {

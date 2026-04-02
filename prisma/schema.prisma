@@ -23,18 +23,19 @@ model Brand {
 }
 
 model Campaign {
-  id          String         @id @default(cuid())
-  brandId     String
-  brand       Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  name        String
-  loopDays    Int
-  publishTime String         @default("09:00")
-  status      CampaignStatus @default(ACTIVE)
-  startDate   DateTime       @default(now())
-  contents    Content[]
-  publishLogs PublishLog[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  brandId         String
+  brand           Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  name            String
+  loopDays        Int
+  publishTime     String         @default("09:00")
+  status          CampaignStatus @default(ACTIVE)
+  startDate       DateTime       @default(now())
+  discountPercent Int?
+  contents        Content[]
+  publishLogs     PublishLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model Content {

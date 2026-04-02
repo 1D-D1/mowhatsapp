@@ -91,6 +91,7 @@ export async function runScheduler(): Promise<SchedulerResult> {
           promoCode: sessionBrand?.promoCode || "",
           displayName: session.displayName || "",
           brandName: campaign.brand.name,
+          discountPercent: campaign.discountPercent,
         };
         await publishStatus(session.sessionName, content, campaign, variables);
 
@@ -149,7 +150,7 @@ async function publishStatus(
   campaign: {
     brand: { ctaUrl: string | null; ctaPhone: string | null; ctaType: string; name: string };
   },
-  variables?: { promoCode?: string; displayName?: string; brandName?: string }
+  variables?: { promoCode?: string; displayName?: string; brandName?: string; discountPercent?: number | null }
 ) {
   // Build caption with CTA, then resolve variables
   let caption = buildCaption(content.caption, campaign.brand);

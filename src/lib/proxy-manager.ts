@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { generateProxyList, buildWahaProxy } from "@/lib/iproyal";
 
 const DEFAULT_BATCH_SIZE = 5;
-const DEFAULT_COUNTRY = "gf";
+const DEFAULT_COUNTRY = "fr";
 
 /**
  * Find a proxy with available capacity (< maxSessions used).

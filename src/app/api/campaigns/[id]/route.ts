@@ -38,7 +38,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const { name, loopDays, publishTime, status, startDate } = body;
+    const { name, loopDays, publishTime, status, startDate, discountPercent } = body;
 
     if (loopDays !== undefined && (loopDays < 1 || loopDays > 7)) {
       return NextResponse.json(
@@ -55,6 +55,7 @@ export async function PUT(
         ...(publishTime !== undefined && { publishTime }),
         ...(status !== undefined && { status }),
         ...(startDate !== undefined && { startDate: new Date(startDate) }),
+        ...(discountPercent !== undefined && { discountPercent }),
       },
       include: { brand: true },
     });

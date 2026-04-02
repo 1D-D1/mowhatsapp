@@ -162,6 +162,10 @@ export function ContentManager({
     if (res.ok) {
       setContents((prev) => prev.filter((c) => c.id !== id));
       toast.success("Contenu supprimé");
+      router.refresh();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Erreur de suppression");
     }
   }
 

@@ -60,9 +60,16 @@ export default async function CampaignDetailPage({
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {campaign.name}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {campaign.name}
+            </h1>
+            {campaign.discountPercent && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
+                -{campaign.discountPercent}%
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
             {campaign.brand.name} | Boucle: {campaign.loopDays}j | Heure:{" "}
             {campaign.publishTime} | {campaign._count.publishLogs}{" "}
