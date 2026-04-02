@@ -173,17 +173,13 @@ export async function publishStatusText(
 
 export async function publishStatusImage(
   sessionName: string,
-  fileUrl: string,
-  mimeType: string,
+  file: { url: string; mimetype: string } | { data: string; mimetype: string },
   caption?: string
 ) {
   return wahaFetch(`/api/${sessionName}/status/image`, {
     method: "POST",
     body: JSON.stringify({
-      file: {
-        mimetype: mimeType,
-        url: fileUrl,
-      },
+      file,
       caption,
     }),
   });
@@ -191,17 +187,13 @@ export async function publishStatusImage(
 
 export async function publishStatusVideo(
   sessionName: string,
-  fileUrl: string,
-  mimeType: string,
+  file: { url: string; mimetype: string } | { data: string; mimetype: string },
   caption?: string
 ) {
   return wahaFetch(`/api/${sessionName}/status/video`, {
     method: "POST",
     body: JSON.stringify({
-      file: {
-        mimetype: mimeType,
-        url: fileUrl,
-      },
+      file,
       convert: true,
       caption,
     }),

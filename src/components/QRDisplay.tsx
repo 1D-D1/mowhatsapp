@@ -20,6 +20,8 @@ export function QRDisplay({ sessionName, onConnected, onFailed }: QRDisplayProps
   const [retryCount, setRetryCount] = useState(0);
   const intervalsRef = useRef<NodeJS.Timeout[]>([]);
 
+  const workingCountRef = useRef(0);
+
   const clearIntervals = useCallback(() => {
     intervalsRef.current.forEach(clearInterval);
     intervalsRef.current = [];
@@ -42,8 +44,10 @@ export function QRDisplay({ sessionName, onConnected, onFailed }: QRDisplayProps
           return;
         }
         if (details.includes("WORKING") || details.includes("CONNECTED")) {
-          clearIntervals();
-          onConnected?.();
+          // Don't trigger success here — let pollStatus confirm it's stable
+          setStatus("waiting");
+          setErrorMsg("Connexion en cours, vérification...");
+          setQrValue(null);
           return;
         }
         // QR not yet available — session might still be starting
@@ -67,7 +71,7 @@ export function QRDisplay({ sessionName, onConnected, onFailed }: QRDisplayProps
       setStatus("error");
       setErrorMsg("Impossible de contacter le serveur");
     }
-  }, [sessionName, onConnected, onFailed, retryCount, clearIntervals]);
+  }, [sessionName, onFailed, retryCount, clearIntervals]);
 
   const pollStatus = useCallback(async () => {
     try {
@@ -76,13 +80,24 @@ export function QRDisplay({ sessionName, onConnected, onFailed }: QRDisplayProps
       const data = await res.json();
 
       if (data.dbStatus === "WORKING") {
-        clearIntervals();
-        onConnected?.();
+        // Require 2 consecutive WORKING polls (~6s) before confirming
+        workingCountRef.current += 1;
+        if (workingCountRef.current >= 2) {
+          clearIntervals();
+          onConnected?.();
+        } else {
+          setStatus("waiting");
+          setErrorMsg("Connexion détectée, vérification...");
+          setQrValue(null);
+        }
       } else if (data.wahaStatus === "FAILED" || data.dbStatus === "FAILED") {
+        workingCountRef.current = 0;
         setStatus("failed");
         setErrorMsg("La session a échoué. Vérifiez le proxy ou réessayez.");
         setQrValue(null);
         clearIntervals();
+      } else {
+        workingCountRef.current = 0;
       }
     } catch {
       // Ignore

@@ -15,6 +15,7 @@ export function PairCode({ sessionName, phoneNumber, onConnected }: PairCodeProp
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const workingCountRef = useRef(0);
 
   const requestCode = useCallback(async () => {
     setLoading(true);
@@ -58,8 +59,14 @@ export function PairCode({ sessionName, phoneNumber, onConnected }: PairCodeProp
         if (!res.ok) return;
         const data = await res.json();
         if (data.dbStatus === "WORKING") {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          onConnected?.();
+          // Require 2 consecutive WORKING polls (~6s) before confirming
+          workingCountRef.current += 1;
+          if (workingCountRef.current >= 2) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            onConnected?.();
+          }
+        } else {
+          workingCountRef.current = 0;
         }
       } catch {
         // Ignore

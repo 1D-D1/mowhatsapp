@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { readFile } from "fs/promises";
+import path from "path";
 import {
   publishStatusImage,
   publishStatusVideo,
@@ -53,8 +55,6 @@ export async function POST(request: NextRequest) {
       }
 
       retried++;
-      const baseUrl = process.env.NEXTAUTH_URL || "https://mowhatsapp.aseta.fr";
-      const fileUrl = `${baseUrl}${log.content.fileUrl}`;
 
       // Build caption
       const captionParts: string[] = [];
@@ -69,11 +69,17 @@ export async function POST(request: NextRequest) {
       try {
         switch (log.content.type) {
           case "IMAGE":
-            await publishStatusImage(log.session.sessionName, fileUrl, log.content.mimeType, caption);
+          case "VIDEO": {
+            const filePath = path.join(process.cwd(), "public", log.content.fileUrl);
+            const buffer = await readFile(filePath);
+            const file = { data: buffer.toString("base64"), mimetype: log.content.mimeType };
+            if (log.content.type === "IMAGE") {
+              await publishStatusImage(log.session.sessionName, file, caption);
+            } else {
+              await publishStatusVideo(log.session.sessionName, file, caption);
+            }
             break;
-          case "VIDEO":
-            await publishStatusVideo(log.session.sessionName, fileUrl, log.content.mimeType, caption);
-            break;
+          }
           case "TEXT":
             await publishStatusText(log.session.sessionName, caption || "");
             break;

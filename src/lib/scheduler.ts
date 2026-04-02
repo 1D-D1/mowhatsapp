@@ -6,6 +6,8 @@ import {
 } from "@/lib/waha";
 import { resolveVariables } from "@/lib/promo-code";
 import { differenceInDays } from "date-fns";
+import { readFile } from "fs/promises";
+import path from "path";
 
 export interface SchedulerResult {
   campaignsChecked: number;
@@ -155,29 +157,21 @@ async function publishStatus(
     caption = resolveVariables(caption, variables);
   }
 
-  // Build full URL for the content file
-  const baseUrl =
-    process.env.NEXTAUTH_URL || "https://mowhatsapp.aseta.fr";
-  const fileUrl = `${baseUrl}${content.fileUrl}`;
-
   switch (content.type) {
     case "IMAGE":
-      await publishStatusImage(
-        sessionName,
-        fileUrl,
-        content.mimeType,
-        caption
-      );
-      break;
+    case "VIDEO": {
+      // Read file from disk and send as base64 (avoids URL accessibility issues)
+      const filePath = path.join(process.cwd(), "public", content.fileUrl);
+      const buffer = await readFile(filePath);
+      const file = { data: buffer.toString("base64"), mimetype: content.mimeType };
 
-    case "VIDEO":
-      await publishStatusVideo(
-        sessionName,
-        fileUrl,
-        content.mimeType,
-        caption
-      );
+      if (content.type === "IMAGE") {
+        await publishStatusImage(sessionName, file, caption);
+      } else {
+        await publishStatusVideo(sessionName, file, caption);
+      }
       break;
+    }
 
     case "TEXT": {
       let text = content.caption || content.fileUrl || "";
