@@ -98,20 +98,41 @@ export async function POST(
         ? resolveVariables(content.caption, variables)
         : undefined;
 
-      // Read file from disk and send as base64 (avoids URL accessibility issues)
-      const filePath = path.join(process.cwd(), "public", content.fileUrl);
-      let fileData: string;
-      try {
-        const buffer = await readFile(filePath);
-        fileData = buffer.toString("base64");
-      } catch {
-        return NextResponse.json(
-          { error: `Fichier introuvable: ${content.fileUrl}` },
-          { status: 404 }
-        );
-      }
+      // Strategy 1: Try to use public URL (faster, no file I/O)
+      // Strategy 2: Fallback to base64 file read if URL fails
+      const publicUrl = `${process.env.NEXTAUTH_URL || 'https://mowhatsapp.aseta.fr'}${content.fileUrl}`;
 
-      const file = { data: fileData, mimetype: content.mimeType };
+      let file: { url: string; mimetype: string } | { data: string; mimetype: string };
+
+      // Try URL first (WAHA can fetch it directly)
+      try {
+        const urlCheck = await fetch(publicUrl, { method: 'HEAD' });
+        if (urlCheck.ok) {
+          file = { url: publicUrl, mimetype: content.mimeType };
+        } else {
+          throw new Error(`URL not accessible: ${urlCheck.status}`);
+        }
+      } catch (urlError) {
+        // Fallback: Read file from disk and send as base64
+        console.log(`URL ${publicUrl} not accessible, trying file read...`);
+        const filePath = path.join(process.cwd(), "public", content.fileUrl);
+        try {
+          const buffer = await readFile(filePath);
+          file = { data: buffer.toString("base64"), mimetype: content.mimeType };
+        } catch (error) {
+          const fsError = error instanceof Error ? error.message : String(error);
+          console.error(`File read error for ${filePath}:`, fsError);
+          return NextResponse.json(
+            {
+              error: `Fichier inaccessible: ${content.fileUrl}`,
+              details: fsError,
+              fullPath: filePath,
+              urlAttempt: publicUrl
+            },
+            { status: 404 }
+          );
+        }
+      }
 
       if (content.type === "IMAGE") {
         await publishStatusImage(session.sessionName, file, caption);

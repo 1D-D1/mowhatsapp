@@ -160,10 +160,26 @@ async function publishStatus(
   switch (content.type) {
     case "IMAGE":
     case "VIDEO": {
-      // Read file from disk and send as base64 (avoids URL accessibility issues)
-      const filePath = path.join(process.cwd(), "public", content.fileUrl);
-      const buffer = await readFile(filePath);
-      const file = { data: buffer.toString("base64"), mimetype: content.mimeType };
+      // Strategy 1: Try to use public URL (faster, no file I/O)
+      // Strategy 2: Fallback to base64 file read if URL fails
+      const publicUrl = `${process.env.NEXTAUTH_URL || 'https://mowhatsapp.aseta.fr'}${content.fileUrl}`;
+
+      let file: { url: string; mimetype: string } | { data: string; mimetype: string };
+
+      try {
+        // Try URL first (WAHA can fetch it directly)
+        const urlCheck = await fetch(publicUrl, { method: 'HEAD' });
+        if (urlCheck.ok) {
+          file = { url: publicUrl, mimetype: content.mimeType };
+        } else {
+          throw new Error(`URL not accessible: ${urlCheck.status}`);
+        }
+      } catch {
+        // Fallback: Read file from disk and send as base64
+        const filePath = path.join(process.cwd(), "public", content.fileUrl);
+        const buffer = await readFile(filePath);
+        file = { data: buffer.toString("base64"), mimetype: content.mimeType };
+      }
 
       if (content.type === "IMAGE") {
         await publishStatusImage(sessionName, file, caption);
