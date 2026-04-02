@@ -32,10 +32,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phoneNumber, displayName, brandIds } = body as {
+    const { phoneNumber, displayName, brandIds, publishesPerDay } = body as {
       phoneNumber: string;
       displayName?: string;
       brandIds: string[];
+      publishesPerDay?: number;
     };
 
     if (!phoneNumber || !brandIds || brandIds.length === 0) {
@@ -45,31 +46,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate session name from phone
     const cleanPhone = phoneNumber.replace(/\D/g, "");
     const sessionName = `wa-${cleanPhone}`;
+    const pubPerDay = Math.min(Math.max(publishesPerDay || 1, 1), 3);
 
-    // Check if session already exists
-    const existing = await prisma.wahaSession.findUnique({
-      where: { sessionName },
-    });
-    if (existing) {
-      return NextResponse.json(
-        { error: "A session with this phone number already exists" },
-        { status: 409 }
-      );
-    }
-
-    // NOTE: Proxy is assigned AFTER connection (via webhook), not during creation
-    // This avoids proxy interference with the QR scan/pairing process
-
-    // Get brand slugs for metadata
+    // Get brands
     const brands = await prisma.brand.findMany({
       where: { id: { in: brandIds } },
     });
-    const brandSlugs = brands.map((b) => b.slug);
 
-    // Create WAHA session WITHOUT proxy
+    // Check if session already exists — if so, add missing brands
+    const existing = await prisma.wahaSession.findUnique({
+      where: { sessionName },
+      include: { brands: true },
+    });
+
+    if (existing) {
+      const existingBrandIds = existing.brands.map((b) => b.brandId);
+      const newBrandIds = brandIds.filter((id) => !existingBrandIds.includes(id));
+
+      if (newBrandIds.length > 0) {
+        await prisma.sessionBrand.createMany({
+          data: newBrandIds.map((brandId) => {
+            const brand = brands.find((b) => b.id === brandId);
+            return {
+              sessionId: existing.id,
+              brandId,
+              promoCode: generatePromoCode(phoneNumber, brand?.slug || "xx"),
+            };
+          }),
+        });
+      }
+
+      // Update publishesPerDay if changed
+      await prisma.wahaSession.update({
+        where: { id: existing.id },
+        data: { publishesPerDay: pubPerDay },
+      });
+
+      const updated = await prisma.wahaSession.findUnique({
+        where: { id: existing.id },
+        include: { proxy: true, brands: { include: { brand: true } } },
+      });
+
+      return NextResponse.json({ ...updated, alreadyConnected: existing.status === "WORKING" }, { status: 200 });
+    }
+
+    // New session
+    const brandSlugs = brands.map((b) => b.slug);
     const webhookUrl = `${process.env.NEXTAUTH_URL || "https://mowhatsapp.aseta.fr"}/api/webhooks/waha`;
 
     try {
@@ -81,7 +105,6 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      // If session already exists in WAHA, continue (we'll update it)
       if (!msg.includes("already exists")) {
         console.error("WAHA createSession error:", msg);
         return NextResponse.json(
@@ -89,43 +112,36 @@ export async function POST(request: NextRequest) {
           { status: 502 }
         );
       }
-      console.log(`WAHA session ${sessionName} already exists, continuing...`);
     }
 
-    // Force-set webhook (GOWS doesn't always apply it during creation)
+    // Force-set webhook (GOWS workaround)
     try {
       await wahaUpdateSession(sessionName, {
         webhooks: [{ url: webhookUrl, events: ["session.status"] }],
       });
     } catch {
-      console.error(`Failed to set webhook on ${sessionName} (non-blocking)`);
+      console.error(`Failed to set webhook on ${sessionName}`);
     }
 
-    // Save to DB
     const session = await prisma.wahaSession.create({
       data: {
         sessionName,
         phoneNumber,
         displayName: displayName || null,
         status: "SCAN_QR",
+        publishesPerDay: pubPerDay,
         proxyId: null,
         brands: {
           create: brandIds.map((brandId) => {
             const brand = brands.find((b) => b.id === brandId);
             return {
               brandId,
-              promoCode: generatePromoCode(
-                phoneNumber,
-                brand?.slug || "xx"
-              ),
+              promoCode: generatePromoCode(phoneNumber, brand?.slug || "xx"),
             };
           }),
         },
       },
-      include: {
-        proxy: true,
-        brands: { include: { brand: true } },
-      },
+      include: { proxy: true, brands: { include: { brand: true } } },
     });
 
     return NextResponse.json(session, { status: 201 });

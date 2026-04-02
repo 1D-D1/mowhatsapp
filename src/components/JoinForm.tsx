@@ -41,6 +41,7 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
   const [phone, setPhone] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [publishesPerDay, setPublishesPerDay] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sessionName, setSessionName] = useState("");
@@ -74,6 +75,7 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
           phoneNumber: phone,
           displayName: displayName || undefined,
           brandIds: selectedBrands,
+          publishesPerDay,
         }),
       });
 
@@ -85,7 +87,12 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
 
       const session = await res.json();
       setSessionName(session.sessionName);
-      setStep("connect");
+
+      if (session.alreadyConnected) {
+        setStep("done");
+      } else {
+        setStep("connect");
+      }
     } catch {
       setError("Erreur de connexion au serveur");
     } finally {
@@ -100,8 +107,8 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
           <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
           <h2 className="mt-4 text-xl font-bold">WhatsApp connecté !</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Votre session est active. Les Stories des marques seront publiées
-            automatiquement sur votre WhatsApp.
+            Votre session est active. Les Stories seront publiées
+            automatiquement {publishesPerDay}x par jour sur votre WhatsApp.
           </p>
         </CardContent>
       </Card>
@@ -227,6 +234,26 @@ export function JoinForm({ brands }: { brands: BrandOption[] }) {
                   </label>
                 ))
               )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Publications par jour</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPublishesPerDay(n)}
+                  className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    publishesPerDay === n
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-muted hover:bg-muted/50"
+                  }`}
+                >
+                  {n}x / jour
+                </button>
+              ))}
             </div>
           </div>
 

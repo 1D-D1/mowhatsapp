@@ -53,18 +53,19 @@ model Content {
 }
 
 model WahaSession {
-  id          String         @id @default(cuid())
-  sessionName String         @unique
-  phoneNumber String?
-  displayName String?
-  status      SessionStatus  @default(PENDING)
-  proxyId     String?
-  proxy       Proxy?         @relation(fields: [proxyId], references: [id])
-  brands      SessionBrand[]
-  publishLogs PublishLog[]
-  lastSeenAt  DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  sessionName     String         @unique
+  phoneNumber     String?
+  displayName     String?
+  status          SessionStatus  @default(PENDING)
+  publishesPerDay Int            @default(1)
+  proxyId         String?
+  proxy           Proxy?         @relation(fields: [proxyId], references: [id])
+  brands          SessionBrand[]
+  publishLogs     PublishLog[]
+  lastSeenAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model SessionBrand {
