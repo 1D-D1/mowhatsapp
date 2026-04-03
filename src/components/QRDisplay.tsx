@@ -51,7 +51,7 @@ export function QRDisplay({ sessionName, onConnected, onFailed }: QRDisplayProps
           return;
         }
         // QR not yet available — session might still be starting
-        if (retryCount < 10) {
+        if (retryCount < 30) {
           setStatus("waiting");
           setErrorMsg("La session démarre... Le QR code arrive.");
           setRetryCount((c) => c + 1);
@@ -106,7 +106,7 @@ export function QRDisplay({ sessionName, onConnected, onFailed }: QRDisplayProps
 
   useEffect(() => {
     fetchQR();
-    const qrId = setInterval(fetchQR, 10000);
+    const qrId = setInterval(fetchQR, 5000);
     const statusId = setInterval(pollStatus, 3000);
     intervalsRef.current = [qrId, statusId];
 
